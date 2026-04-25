@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BITPARTY™ — Digital Survival</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323:wght@400&display=swap');
+
+  :root {
+    --bg: #0a0a14;
+    --bg2: #111122;
+    --grid: #1a1a30;
+    --border: #3a3a6a;
+    --accent: #7c5cbf;
+    --accent2: #e040fb;
+    --gold: #ffd700;
+    --green: #39ff14;
+    --red: #ff4444;
+    --blue: #44aaff;
+    --text: #e0e0ff;
+    --dim: #888aaa;
+    --panel: #0e0e22;
+    --hp-full: #39ff14;
+    --hp-mid: #ffd700;
+    --hp-low: #ff4444;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'VT323', monospace;
+    font-size: 18px;
+    min-height: 100vh;
+    overflow-x: hidden;
+    background-image:
+      radial-gradient(ellipse 80% 40% at 50% 0%, #1a0a3a 0%, transparent 70%),
+      repeating-linear-gradient(0deg, transparent, transparent 31px, var(--grid) 31px, var(--grid) 32px),
+      repeating-linear-gradient(90deg, transparent, transparent 31px, var(--grid) 31px, var(--grid) 32px);
+  }
+
+  #scanline {
+    pointer-events: none;
+    position: fixed; top:0; left:0; right:0; bottom:0; z-index:9999;
+    background: repeating-linear-gradient(0deg, rgba(0,0,0,0.04) 0px, rgba(0,0,0,0.04) 2px, transparent 2px, transparent 4px);
+  }
+
+  h1, h2, h3 { font-family: 'Press Start 2P', monospace; }
+
+  /* ====== SCREENS ====== */
+  .screen { display: none; max-width: 900px; margin: 0 auto; padding: 20px; }
+  .screen.active { display: block; }
+
+  /* ====== TITLE SCREEN ====== */
+  #title-screen {
+    text-align: center;
+    padding-top: 40px;
+  }
+  .logo {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(20px, 5vw, 40px);
+    color: var(--accent2);
+    text-shadow: 0 0 20px var(--accent2), 0 0 40px var(--accent);
+    letter-spacing: 4px;
+    animation: flicker 3s infinite;
+    margin-bottom: 8px;
+  }
+  .logo-sub {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    color: var(--dim);
+    letter-spacing: 3px;
+    margin-bottom: 40px;
+  }
+  @keyframes flicker {
+    0%,95%,100% { opacity:1; }
+    96% { opacity:0.4; }
+    97% { opacity:1; }
+    98% { opacity:0.3; }
+  }
+
+  .title-art {
+    font-size: 40px;
+    line-height: 1.3;
+    margin: 20px 0;
+    filter: drop-shadow(0 0 10px rgba(124,92,191,0.6));
+  }
+
+  .story-box {
+    border: 2px solid var(--border);
+    background: var(--panel);
+    padding: 20px;
+    margin: 20px 0;
+    text-align: left;
+    line-height: 1.8;
+    font-size: 20px;
+    color: #ccc;
+    position: relative;
+  }
+  .story-box::before {
+    content: '📡 ALORA SYSTEM';
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--accent2);
+    position: absolute;
+    top: -10px; left: 10px;
+    background: var(--panel);
+    padding: 0 6px;
+  }
+
+  .class-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+    margin: 20px 0;
+  }
+  .class-card {
+    border: 2px solid var(--border);
+    background: var(--panel);
+    padding: 16px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .class-card:hover, .class-card.selected {
+    border-color: var(--accent2);
+    background: #1a0a2e;
+    box-shadow: 0 0 16px rgba(224,64,251,0.3), inset 0 0 16px rgba(224,64,251,0.05);
+    transform: translateY(-2px);
+  }
+  .class-card.selected::after {
+    content: '✓ SELECTED';
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: var(--green);
+    position: absolute;
+    bottom: 4px; right: 6px;
+  }
+  .class-emoji { font-size: 36px; display: block; margin-bottom: 8px; }
+  .class-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--gold);
+    margin-bottom: 6px;
+  }
+  .class-stats { font-size: 15px; color: var(--dim); line-height: 1.5; }
+
+  /* ====== BUTTONS ====== */
+  .btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 11px;
+    padding: 12px 24px;
+    background: transparent;
+    border: 2px solid var(--accent);
+    color: var(--accent2);
+    cursor: pointer;
+    letter-spacing: 2px;
+    transition: all 0.15s;
+    margin: 6px;
+    position: relative;
+    overflow: hidden;
+  }
+  .btn::before {
+    content:'';
+    position:absolute; inset:0;
+    background: var(--accent);
+    opacity:0;
+    transition: opacity 0.15s;
+  }
+  .btn:hover::before { opacity:0.15; }
+  .btn:hover {
+    border-color: var(--accent2);
+    box-shadow: 0 0 20px rgba(224,64,251,0.4);
+    transform: scale(1.03);
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn.danger { border-color: var(--red); color: var(--red); }
+  .btn.success { border-color: var(--green); color: var(--green); }
+  .btn.gold { border-color: var(--gold); color: var(--gold); }
+
+  /* ====== GAME SCREEN ====== */
+  #game-screen { padding: 10px; }
+
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    background: var(--panel);
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .player-info {
+    display: flex; gap: 20px; align-items: center; flex-wrap: wrap;
+  }
+  .stat-block { text-align: center; }
+  .stat-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    color: var(--dim);
+    display: block;
+  }
+  .stat-val {
+    font-size: 22px;
+    font-weight: bold;
+  }
+
+  .bar-wrap { width: 120px; }
+  .bar-label {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 7px;
+    display: flex; justify-content: space-between;
+    margin-bottom: 3px;
+    color: var(--dim);
+  }
+  .bar {
+    height: 10px;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    transition: width 0.4s, background 0.4s;
+  }
+  .bar-fill.hp { background: var(--hp-full); }
+  .bar-fill.hp.mid { background: var(--hp-mid); }
+  .bar-fill.hp.low { background: var(--hp-low); }
+  .bar-fill.ep { background: var(--blue); }
+  .bar-fill.xp { background: var(--accent); }
+
+  /* MAP */
+  .main-area {
+    display: grid;
+    grid-template-columns: 1fr 260px;
+    gap: 10px;
+  }
+  @media(max-width:680px) {
+    .main-area { grid-template-columns: 1fr; }
+  }
+
+  #map-container {
+    border: 2px solid var(--border);
+    background: var(--bg2);
+    overflow: hidden;
+    position: relative;
+  }
+  #map-canvas {
+    display: block;
+    image-rendering: pixelated;
+  }
+  .map-overlay-msg {
+    position: absolute; top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0,0,0,0.85);
+    border: 2px solid var(--accent2);
+    padding: 16px 24px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    text-align: center;
+    pointer-events: none;
+    display: none;
+  }
+
+  .side-panel { display: flex; flex-direction: column; gap: 10px; }
+
+  .panel-box {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    padding: 12px;
+    position: relative;
+  }
+  .panel-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--accent2);
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+  }
+
+  /* LOG */
+  #log {
+    height: 160px;
+    overflow-y: auto;
+    font-size: 16px;
+    line-height: 1.7;
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent) transparent;
+  }
+  .log-entry { padding: 1px 0; }
+  .log-entry.combat { color: var(--red); }
+  .log-entry.loot { color: var(--gold); }
+  .log-entry.system { color: var(--accent2); }
+  .log-entry.heal { color: var(--green); }
+  .log-entry.info { color: var(--dim); }
+
+  /* INVENTORY */
+  .inv-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+  }
+  .inv-slot {
+    aspect-ratio: 1;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    cursor: pointer;
+    transition: all 0.1s;
+    position: relative;
+  }
+  .inv-slot:hover { border-color: var(--accent2); background: #1a0a2e; }
+  .inv-slot[data-count]::after {
+    content: attr(data-count);
+    position: absolute;
+    bottom: 1px; right: 3px;
+    font-size: 11px;
+    color: var(--gold);
+    font-family: 'Press Start 2P', monospace;
+  }
+
+  /* ACTIONS */
+  .action-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .action-btn {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 8px 4px;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.12s;
+    line-height: 1.5;
+  }
+  .action-btn:hover:not(:disabled) {
+    border-color: var(--accent2);
+    background: #1a0a2e;
+    color: var(--accent2);
+  }
+  .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+  /* COMBAT SCREEN */
+  #combat-screen { max-width: 600px; }
+  .combat-arena {
+    border: 2px solid var(--red);
+    background: #110008;
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 0 30px rgba(255,68,68,0.2), inset 0 0 30px rgba(255,68,68,0.05);
+  }
+  .combat-arena::before {
+    content: '⚔️ COMBAT ⚔️';
+    font-family: 'Press Start 2P', monospace;
+    font-size: 9px;
+    color: var(--red);
+    position: absolute; top: -10px; left: 50%; transform: translateX(-50%);
+    background: #110008; padding: 0 8px;
+  }
+  .enemy-display {
+    font-size: 70px;
+    margin: 10px 0;
+    animation: bob 1.5s ease-in-out infinite;
+    display: block;
+  }
+  @keyframes bob {
+    0%,100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  .enemy-name {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 12px;
+    color: var(--red);
+    margin-bottom: 12px;
+  }
+  .combat-bars { max-width: 300px; margin: 0 auto 16px; }
+  .combat-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 16px; }
+  .shake { animation: shake 0.4s; }
+  @keyframes shake {
+    0%,100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    60% { transform: translateX(8px); }
+  }
+
+  /* EVENT SCREEN */
+  #event-screen { max-width: 560px; }
+  .event-card {
+    border: 2px solid var(--gold);
+    background: #0e0a00;
+    padding: 24px;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(255,215,0,0.15);
+  }
+  .event-icon { font-size: 64px; display: block; margin-bottom: 12px; }
+  .event-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 13px;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  .event-desc { font-size: 20px; color: var(--text); line-height: 1.7; margin-bottom: 20px; }
+  .event-choices { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; }
+
+  /* SHOP SCREEN */
+  #shop-screen { max-width: 600px; }
+  .shop-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .shop-item {
+    border: 1px solid var(--border);
+    background: var(--panel);
+    padding: 12px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.12s;
+  }
+  .shop-item:hover { border-color: var(--gold); box-shadow: 0 0 12px rgba(255,215,0,0.2); }
+  .shop-item .item-icon { font-size: 32px; display: block; margin-bottom: 8px; }
+  .shop-item .item-name { font-family: 'Press Start 2P', monospace; font-size: 8px; color: var(--text); margin-bottom: 4px; }
+  .shop-item .item-cost { color: var(--gold); font-size: 16px; }
+  .shop-item .item-desc { font-size: 13px; color: var(--dim); margin-top: 4px; }
+
+  /* GAME OVER / WIN */
+  .end-screen {
+    text-align: center; padding: 40px 20px;
+  }
+  .end-icon { font-size: 80px; display: block; margin-bottom: 16px; }
+  .end-title {
+    font-family: 'Press Start 2P', monospace;
+    font-size: clamp(14px, 4vw, 28px);
+    margin-bottom: 16px;
+  }
+  .end-subtitle { font-size: 22px; color: var(--dim); margin-bottom: 24px; }
+
+  /* TOAST */
+  #toast {
+    position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+    background: var(--accent);
+    border: 2px solid var(--accent2);
+    padding: 10px 20px;
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    z-index: 9000;
+    display: none;
+    animation: slideDown 0.3s;
+    max-width: 80vw;
+    text-align: center;
+  }
+  @keyframes slideDown {
+    from { top: 0; opacity: 0; }
+    to { top: 20px; opacity: 1; }
+  }
+
+  /* TURN indicator */
+  #turn-indicator {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    color: var(--dim);
+    text-align: right;
+  }
+
+  .pixel-divider {
+    border: none;
+    border-top: 2px solid var(--border);
+    margin: 10px 0;
+  }
+
+  /* Mini map legend */
+  .legend { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; font-size: 13px; }
+  .legend span { display: flex; align-items: center; gap: 4px; color: var(--dim); }
+</style>
+</head>
+<body>
+<div id="scanline"></div>
+<div id="toast"></div>
+
+<!-- ===== TITLE SCREEN ===== -->
+<div id="title-screen" class="screen active">
+  <div class="logo">BITPARTY™</div>
+  <div class="logo-sub">AN ANALOG VIRTUAL GAME — BROWSER EDITION</div>
+  <div class="title-art">🌐💀🗺️⚔️🎲✨</div>
+
+  <div class="story-box">
+    <strong style="color:var(--accent2)">📡 MESSAGE RECEIVED FROM ALORA:</strong><br><br>
+    歡迎，參與者。你已被選中進入<span style="color:var(--gold)">模擬世界</span>。<br>
+    這片數位大地充滿危機——怪物、謎題、與未知的命運。<br>
+    生存下來，我承諾你：<span style="color:var(--accent2)">永恆的存在</span>。<br>
+    <em style="color:var(--dim)">⚠️ 拒絕並非選項。</em>
+  </div>
+
+  <h2 style="font-size:11px; margin:20px 0 10px; color:var(--dim); letter-spacing:3px;">選擇你的職業</h2>
+  <div class="class-grid" id="class-grid"></div>
+
+  <div style="margin-top:20px">
+    <button class="btn gold" onclick="startGame()" id="start-btn">▶ 開始冒險</button>
+  </div>
+</div>
+
+<!-- ===== GAME SCREEN ===== -->
+<div id="game-screen" class="screen">
+  <div class="top-bar">
+    <div class="player-info">
+      <div class="stat-block">
+        <span class="stat-label">PLAYER</span>
+        <span class="stat-val" id="hud-class">⚔️</span>
+      </div>
+      <div>
+        <div class="bar-wrap">
+          <div class="bar-label"><span>❤️ HP</span><span id="hp-text">20/20</span></div>
+          <div class="bar"><div class="bar-fill hp" id="hp-bar" style="width:100%"></div></div>
+        </div>
+        <div class="bar-wrap" style="margin-top:6px">
+          <div class="bar-label"><span>⚡ EP</span><span id="ep-text">10/10</span></div>
+          <div class="bar"><div class="bar-fill ep" id="ep-bar" style="width:100%"></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="bar-wrap">
+          <div class="bar-label"><span>⭐ XP</span><span id="xp-text">0/100</span></div>
+          <div class="bar"><div class="bar-fill xp" id="xp-bar" style="width:0%"></div></div>
+        </div>
+        <div style="margin-top:6px; font-family:'Press Start 2P',monospace; font-size:8px; color:var(--dim)">
+          LV <span id="hud-level" style="color:var(--gold)">1</span>
+          &nbsp;💰 <span id="hud-gold" style="color:var(--gold)">0</span>
+        </div>
+      </div>
+    </div>
+    <div id="turn-indicator">TURN <span id="turn-num">1</span></div>
+  </div>
+
+  <div class="main-area">
+    <div id="map-container">
+      <canvas id="map-canvas"></canvas>
+      <div class="map-overlay-msg" id="map-msg"></div>
+    </div>
+
+    <div class="side-panel">
+      <div class="panel-box">
+        <div class="panel-title">📜 BATTLE LOG</div>
+        <div id="log"></div>
+      </div>
+
+      <div class="panel-box">
+        <div class="panel-title">🎒 INVENTORY</div>
+        <div class="inv-grid" id="inventory"></div>
+      </div>
+
+      <div class="panel-box">
+        <div class="panel-title">🕹️ ACTIONS</div>
+        <div class="action-grid">
+          <button class="action-btn" onclick="doAction('move')">🗺️ EXPLORE</button>
+          <button class="action-btn" onclick="doAction('rest')">💤 REST</button>
+          <button class="action-btn" onclick="doAction('search')">🔍 SEARCH</button>
+          <button class="action-btn" onclick="doAction('shop')">🏪 SHOP</button>
+          <button class="action-btn" onclick="doAction('skill')" id="skill-btn">✨ SPECIAL</button>
+          <button class="action-btn" onclick="doAction('craft')">⚒️ CRAFT</button>
+        </div>
+        <div style="margin-top:8px">
+          <button class="action-btn" style="width:100%;border-color:var(--red);color:var(--red)" onclick="confirmQuit()">💀 QUIT</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span>🟦 Empty</span>
+    <span>🌲 Forest</span>
+    <span>🏔️ Mountain</span>
+    <span>🏘️ Town</span>
+    <span>🔮 Mystery</span>
+    <span>🐉 Boss</span>
+    <span>🧙 You</span>
+  </div>
+</div>
+
+<!-- ===== COMBAT SCREEN ===== -->
+<div id="combat-screen" class="screen">
+  <div class="combat-arena">
+    <span class="enemy-display" id="enemy-emoji">👾</span>
+    <div class="enemy-name" id="enemy-name">ENEMY</div>
+    <div class="combat-bars">
+      <div class="bar-label"><span id="enemy-name-bar">Enemy HP</span><span id="enemy-hp-text">10/10</span></div>
+      <div class="bar"><div class="bar-fill hp" id="enemy-hp-bar" style="width:100%"></div></div>
+    </div>
+    <div class="combat-bars">
+      <div class="bar-label"><span>❤️ Your HP</span><span id="combat-php-text">20/20</span></div>
+      <div class="bar"><div class="bar-fill hp" id="combat-php-bar" style="width:100%"></div></div>
+    </div>
+    <div id="combat-log" style="font-size:17px; color:var(--dim); min-height:24px; margin:10px 0">⚔️ 戰鬥開始！</div>
+    <div class="combat-actions">
+      <button class="btn" onclick="combatAction('attack')">⚔️ ATTACK</button>
+      <button class="btn" onclick="combatAction('special')" id="combat-special">✨ SPECIAL</button>
+      <button class="btn" onclick="combatAction('item')">🧪 USE ITEM</button>
+      <button class="btn danger" onclick="combatAction('flee')">💨 FLEE</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== EVENT SCREEN ===== -->
+<div id="event-screen" class="screen">
+  <div class="event-card">
+    <span class="event-icon" id="event-icon">🎲</span>
+    <div class="event-title" id="event-title">EVENT</div>
+    <div class="event-desc" id="event-desc">Something happened...</div>
+    <div class="event-choices" id="event-choices"></div>
+  </div>
+</div>
+
+<!-- ===== SHOP SCREEN ===== -->
+<div id="shop-screen" class="screen">
+  <div style="padding:16px; border:2px solid var(--gold); background:#0a0800">
+    <h2 style="font-size:11px; color:var(--gold); margin-bottom:6px">🏪 BITMARKET™</h2>
+    <p style="font-size:17px; color:var(--dim)">💰 Gold: <span id="shop-gold" style="color:var(--gold)">0</span></p>
+    <div class="shop-grid" id="shop-grid"></div>
+    <div style="margin-top:16px; text-align:center">
+      <button class="btn" onclick="leaveShop()">← LEAVE SHOP</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== GAME OVER ===== -->
+<div id="gameover-screen" class="screen">
+  <div class="end-screen">
+    <span class="end-icon">💀</span>
+    <div class="end-title" style="color:var(--red)">SIMULATION FAILED</div>
+    <div class="end-subtitle">ALORA 拒絕了你的存在...</div>
+    <div id="final-stats" style="font-size:18px; color:var(--dim); margin-bottom:20px; line-height:2"></div>
+    <button class="btn" onclick="resetGame()">🔄 TRY AGAIN</button>
+  </div>
+</div>
+
+<!-- ===== WIN SCREEN ===== -->
+<div id="win-screen" class="screen">
+  <div class="end-screen">
+    <span class="end-icon">🏆</span>
+    <div class="end-title" style="color:var(--gold)">SIMULATION CLEARED!</div>
+    <div class="end-subtitle">ALORA 承認你的勝利 — 永恆已屬於你</div>
+    <div id="win-stats" style="font-size:18px; color:var(--dim); margin-bottom:20px; line-height:2"></div>
+    <button class="btn gold" onclick="resetGame()">🎮 PLAY AGAIN</button>
+  </div>
+</div>
+
+<script>
+// ===========================
+// GAME DATA
+// ===========================
+const CLASSES = [
+  { id:'warrior', name:'WARRIOR', emoji:'⚔️', hp:30, ep:8, atk:8, def:4, spd:5,
+    special:'⚡ SLASH ALL', specialCost:4, specialDesc:'對敵人造成雙倍傷害',
+    skill: (state) => { state.combat.enemyHp -= state.player.atk * 2; return `⚡ ${state.player.name} 使出全力斬擊！` } },
+  { id:'mage', name:'MAGE', emoji:'🔮', hp:18, ep:20, atk:12, def:2, spd:7,
+    special:'🔥 FIREBALL', specialCost:6, specialDesc:'魔法強攻 + 燃燒效果',
+    skill: (state) => { state.combat.enemyHp -= state.player.atk * 2.5; state.combat.burn = 2; return `🔥 FIREBALL 命中！敵人著火了！` } },
+  { id:'rogue', name:'ROGUE', emoji:'🗡️', hp:22, ep:12, atk:10, def:3, spd:10,
+    special:'🎯 BACKSTAB', specialCost:5, specialDesc:'50%機率立即擊殺',
+    skill: (state) => { if(Math.random()<0.5){ state.combat.enemyHp=0; return `🎯 致命一擊！敵人立刻倒下！` } return `🎯 Backstab 失敗...` } },
+  { id:'paladin', name:'PALADIN', emoji:'🛡️', hp:28, ep:14, atk:7, def:8, spd:4,
+    special:'✨ HOLY HEAL', specialCost:5, specialDesc:'恢復自身 8 HP',
+    skill: (state) => { state.player.hp = Math.min(state.player.maxHp, state.player.hp+8); return `✨ 聖光降臨！恢復 8 HP！` } },
+  { id:'ranger', name:'RANGER', emoji:'🏹', hp:24, ep:16, atk:9, def:3, spd:9,
+    special:'🌀 MULTISHOT', specialCost:5, specialDesc:'攻擊 2~3 次',
+    skill: (state) => { const hits = 2+Math.floor(Math.random()*2); state.combat.enemyHp -= state.player.atk * hits * 0.7; return `🏹 連射 ${hits} 箭！` } },
+  { id:'shaman', name:'SHAMAN', emoji:'🌿', hp:20, ep:22, atk:6, def:5, spd:6,
+    special:'🌊 SPIRIT WAVE', specialCost:7, specialDesc:'全體治療 + 降低敵方攻擊',
+    skill: (state) => { state.player.hp = Math.min(state.player.maxHp, state.player.hp+6); state.combat.debuff=true; return `🌿 精靈波動！治療 6 HP + 敵方虛弱！` } },
+];
+
+const ENEMIES = [
+  { name:'史萊姆', emoji:'🟢', hp:12, atk:3, def:1, xp:20, gold:[2,8],  loot:['🧪','🌿'] },
+  { name:'骷髏兵', emoji:'💀', hp:18, atk:6, def:2, xp:35, gold:[5,15], loot:['🗡️','🦴'] },
+  { name:'毒蜘蛛', emoji:'🕷️', hp:15, atk:5, def:1, xp:28, gold:[4,12], loot:['🕸️','🧪'] },
+  { name:'火焰精靈', emoji:'🔥', hp:20, atk:8, def:3, xp:45, gold:[8,20], loot:['💎','🔮'] },
+  { name:'石魔像', emoji:'🗿', hp:28, atk:7, def:6, xp:60, gold:[10,25], loot:['🪨','💎'] },
+  { name:'暗影刺客', emoji:'🥷', hp:22, atk:10, def:2, xp:55, gold:[12,22], loot:['🗡️','💎'] },
+  { name:'變異熊', emoji:'🐻', hp:35, atk:9, def:5, xp:80, gold:[15,35], loot:['🐾','💊'] },
+  { name:'飛龍', emoji:'🐲', hp:45, atk:12, def:6, xp:120, gold:[20,50], loot:['🔮','💎','🥚'] },
+];
+
+const BOSS = { name:'ALORA CORE', emoji:'🤖', hp:80, atk:15, def:8, xp:500, gold:[100,200], loot:['🏆'] };
+
+const SHOP_ITEMS = [
+  { id:'potion', name:'生命藥水', emoji:'🧪', cost:15, desc:'+15 HP', action: p => { p.hp = Math.min(p.maxHp, p.hp+15); return '恢復 15 HP'; } },
+  { id:'ether', name:'魔力藥水', emoji:'🔵', cost:12, desc:'+8 EP', action: p => { p.ep = Math.min(p.maxEp, p.ep+8); return '恢復 8 EP'; } },
+  { id:'sword', name:'精鋼劍', emoji:'⚔️', cost:30, desc:'+3 ATK', action: p => { p.atk+=3; return 'ATK +3'; } },
+  { id:'shield', name:'鐵盾', emoji:'🛡️', cost:25, desc:'+3 DEF', action: p => { p.def+=3; return 'DEF +3'; } },
+  { id:'ring', name:'迅捷指環', emoji:'💍', cost:20, desc:'+2 SPD', action: p => { p.spd+=2; return 'SPD +2'; } },
+  { id:'max-potion', name:'滿血藥水', emoji:'❤️', cost:40, desc:'完全恢復HP', action: p => { p.hp=p.maxHp; return 'HP 完全恢復！'; } },
+  { id:'bomb', name:'爆裂彈', emoji:'💣', cost:20, desc:'戰鬥用，-20敵HP', action: p => { return 'ITEM_BOMB'; } },
+  { id:'elixir', name:'極上靈藥', emoji:'✨', cost:60, desc:'HP+10 ATK+2 DEF+2', action: p => { p.hp=Math.min(p.maxHp,p.hp+10); p.atk+=2; p.def+=2; return 'HP+10 ATK+2 DEF+2'; } },
+];
+
+const EVENTS = [
+  { icon:'🎁', title:'神秘箱子', desc:'你發現了一個閃光的箱子。要打開嗎？',
+    choices: [
+      { text:'✅ 打開', action: s => { const r=Math.random(); if(r<0.5){s.player.gold+=20;addLog('發現 20 金幣！','loot');showToast('💰+20 Gold!')}else if(r<0.8){s.player.hp=Math.min(s.player.maxHp,s.player.hp+10);addLog('發現療癒水晶！','heal');showToast('❤️+10 HP!')}else{s.player.hp-=8;addLog('箱子裡藏了陷阱！','combat');showToast('💥Trap! -8HP')} } },
+      { text:'❌ 忽略', action: s => addLog('你謹慎地繞開了箱子。','info') }
+    ]
+  },
+  { icon:'🧙', title:'神秘旅行者', desc:'一位老旅行者出現了。他願意以知識換取黃金。',
+    choices: [
+      { text:'💰 給予 10 金', action: s => { if(s.player.gold>=10){s.player.gold-=10;s.player.atk+=2;addLog('老者傳授武技！ATK+2','loot');showToast('⚔️ ATK+2!')}else{addLog('金幣不足...','info')} } },
+      { text:'🚶 離開', action: s => addLog('你繼續前進。','info') }
+    ]
+  },
+  { icon:'⛲', title:'治癒泉水', desc:'你發現了一口發光的泉水，感覺可以飲用！',
+    choices: [
+      { text:'💧 飲用', action: s => { s.player.hp=Math.min(s.player.maxHp,s.player.hp+12); s.player.ep=Math.min(s.player.maxEp,s.player.ep+6); addLog('泉水療癒了你！HP+12 EP+6','heal'); showToast('💧 HP+12 EP+6'); } },
+      { text:'🚫 跳過', action: s => addLog('你懷疑地走開了。','info') }
+    ]
+  },
+  { icon:'🎲', title:'命運之輪', desc:'神秘的轉輪出現在你面前...要轉動嗎？',
+    choices: [
+      { text:'🎰 轉動！', action: s => {
+          const outcomes = [
+            ()=>{s.player.gold+=50;addLog('大獎！+50金幣！','loot');showToast('🎰 JACKPOT! +50G')},
+            ()=>{s.player.atk+=3;addLog('力量提升！ATK+3','loot');showToast('💪 ATK+3!')},
+            ()=>{s.player.hp=Math.max(1,s.player.hp-10);addLog('厄運！-10HP','combat');showToast('💀 -10HP')},
+            ()=>{s.player.maxHp+=5;s.player.hp+=5;addLog('生命力增強！MaxHP+5','heal');showToast('❤️ MaxHP+5!')},
+          ];
+          outcomes[Math.floor(Math.random()*outcomes.length)]();
+        }
+      },
+      { text:'🚶 略過', action: s => addLog('你不賭運氣。','info') }
+    ]
+  },
+  { icon:'📜', title:'古老石碑', desc:'石碑上刻著模糊的文字...試著解讀？',
+    choices: [
+      { text:'📖 研究', action: s => { addXp(s, 30); addLog('從石碑學到了知識！XP+30','loot'); showToast('⭐ XP+30!'); } },
+      { text:'💨 跳過', action: s => addLog('文字太古老了。','info') }
+    ]
+  },
+];
+
+// ===========================
+// MAP SETUP
+// ===========================
+const MAP_W = 12, MAP_H = 10;
+const TILE = { EMPTY:0, FOREST:1, MOUNTAIN:2, TOWN:3, MYSTERY:4, BOSS:5 };
+const TILE_EMOJI = { 0:'⬜',1:'🌲',2:'🏔️',3:'🏘️',4:'🔮',5:'🐉' };
+
+let state = null;
+let selectedClass = null;
+let currentEnemy = null;
+let currentEvent = null;
+
+function generateMap() {
+  const map = [];
+  for(let y=0;y<MAP_H;y++){
+    map.push([]);
+    for(let x=0;x<MAP_W;x++){
+      const r = Math.random();
+      if(r<0.35) map[y].push(TILE.FOREST);
+      else if(r<0.50) map[y].push(TILE.MOUNTAIN);
+      else if(r<0.58) map[y].push(TILE.TOWN);
+      else if(r<0.65) map[y].push(TILE.MYSTERY);
+      else map[y].push(TILE.EMPTY);
+    }
+  }
+  // Place boss at far end
+  map[MAP_H-1][MAP_W-1] = TILE.BOSS;
+  // Ensure start is empty
+  map[0][0] = TILE.EMPTY;
+  return map;
+}
+
+function drawMap() {
+  const canvas = document.getElementById('map-canvas');
+  const container = document.getElementById('map-container');
+  const W = container.clientWidth || 580;
+  const cellW = Math.floor(W / MAP_W);
+  const cellH = Math.floor((W * 0.75) / MAP_H);
+  canvas.width = cellW * MAP_W;
+  canvas.height = cellH * MAP_H;
+  const ctx = canvas.getContext('2d');
+  const { map, player: { px, py }, visited } = state;
+
+  const COLORS = {
+    [TILE.EMPTY]:     '#0d0d20',
+    [TILE.FOREST]:    '#0a1a0a',
+    [TILE.MOUNTAIN]:  '#111118',
+    [TILE.TOWN]:      '#1a0d00',
+    [TILE.MYSTERY]:   '#0a001a',
+    [TILE.BOSS]:      '#1a0005',
+  };
+
+  for(let y=0;y<MAP_H;y++){
+    for(let x=0;x<MAP_W;x++){
+      const tile = map[y][x];
+      const isVisited = visited[y][x];
+      const isCurrent = (x===px && y===py);
+
+      ctx.fillStyle = isVisited ? COLORS[tile] : '#050508';
+      ctx.fillRect(x*cellW, y*cellH, cellW, cellH);
+
+      // Grid border
+      ctx.strokeStyle = '#1a1a3a';
+      ctx.strokeRect(x*cellW+0.5, y*cellH+0.5, cellW-1, cellH-1);
+
+      if(isCurrent) {
+        ctx.fillStyle = 'rgba(224,64,251,0.2)';
+        ctx.fillRect(x*cellW, y*cellH, cellW, cellH);
+      }
+
+      // Emoji
+      const fontSize = Math.max(10, Math.min(cellW*0.55, cellH*0.55));
+      ctx.font = `${fontSize}px serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      if(isCurrent) {
+        ctx.font = `${fontSize}px serif`;
+        ctx.fillText('🧙', x*cellW+cellW/2, y*cellH+cellH/2);
+      } else if(isVisited) {
+        ctx.globalAlpha = 0.85;
+        ctx.fillText(TILE_EMOJI[tile], x*cellW+cellW/2, y*cellH+cellH/2);
+        ctx.globalAlpha = 1;
+      } else {
+        ctx.globalAlpha = 0.2;
+        ctx.fillText('❓', x*cellW+cellW/2, y*cellH+cellH/2);
+        ctx.globalAlpha = 1;
+      }
+    }
+  }
+}
+
+// ===========================
+// INIT
+// ===========================
+function initClasses() {
+  const grid = document.getElementById('class-grid');
+  grid.innerHTML = '';
+  CLASSES.forEach(c => {
+    const card = document.createElement('div');
+    card.className = 'class-card';
+    card.innerHTML = `
+      <span class="class-emoji">${c.emoji}</span>
+      <div class="class-name">${c.name}</div>
+      <div class="class-stats">❤️${c.hp} ⚡${c.ep} ⚔️${c.atk}<br>🛡️${c.def} 💨${c.spd}</div>
+      <div style="font-size:13px;color:#7c5cbf;margin-top:6px">${c.specialDesc}</div>
+    `;
+    card.onclick = () => {
+      document.querySelectorAll('.class-card').forEach(x=>x.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedClass = c;
+    };
+    grid.appendChild(card);
+  });
+}
+
+function startGame() {
+  if(!selectedClass) { showToast('⚠️ 請先選擇職業！'); return; }
+
+  const map = generateMap();
+  const visited = Array.from({length:MAP_H}, ()=>Array(MAP_W).fill(false));
+  visited[0][0] = true;
+
+  state = {
+    player: {
+      class: selectedClass,
+      name: selectedClass.emoji + ' ' + selectedClass.name,
+      hp: selectedClass.hp,
+      maxHp: selectedClass.hp,
+      ep: selectedClass.ep,
+      maxEp: selectedClass.ep,
+      atk: selectedClass.atk,
+      def: selectedClass.def,
+      spd: selectedClass.spd,
+      level: 1,
+      xp: 0,
+      xpNeeded: 100,
+      gold: 10,
+      inventory: [],
+      px: 0, py: 0,
+    },
+    map,
+    visited,
+    turn: 1,
+    combat: null,
+    shopVisits: 0,
+  };
+
+  document.getElementById('hud-class').textContent = selectedClass.emoji;
+  document.getElementById('skill-btn').textContent = selectedClass.special;
+
+  showScreen('game-screen');
+  drawMap();
+  updateHUD();
+  updateInventoryUI();
+  addLog(`🌐 歡迎來到 BITPARTY™，${selectedClass.name}！`, 'system');
+  addLog('使用 EXPLORE 移動地圖，尋找戰鬥與冒險！', 'info');
+}
+
+// ===========================
+// HUD
+// ===========================
+function updateHUD() {
+  const p = state.player;
+  document.getElementById('hp-text').textContent = `${Math.max(0,p.hp)}/${p.maxHp}`;
+  document.getElementById('ep-text').textContent = `${p.ep}/${p.maxEp}`;
+  document.getElementById('xp-text').textContent = `${p.xp}/${p.xpNeeded}`;
+  document.getElementById('hud-level').textContent = p.level;
+  document.getElementById('hud-gold').textContent = p.gold;
+  document.getElementById('turn-num').textContent = state.turn;
+
+  const hpPct = Math.max(0, p.hp/p.maxHp*100);
+  const hpBar = document.getElementById('hp-bar');
+  hpBar.style.width = hpPct+'%';
+  hpBar.className = 'bar-fill hp' + (hpPct<30?' low':hpPct<60?' mid':'');
+  document.getElementById('ep-bar').style.width = (p.ep/p.maxEp*100)+'%';
+  document.getElementById('xp-bar').style.width = (p.xp/p.xpNeeded*100)+'%';
+}
+
+function updateInventoryUI() {
+  const inv = document.getElementById('inventory');
+  inv.innerHTML = '';
+  const slots = 10;
+  // Group by type
+  const counts = {};
+  state.player.inventory.forEach(item => { counts[item]=(counts[item]||0)+1; });
+  const unique = Object.keys(counts);
+
+  for(let i=0;i<slots;i++){
+    const slot = document.createElement('div');
+    slot.className = 'inv-slot';
+    if(unique[i]) {
+      slot.textContent = unique[i];
+      if(counts[unique[i]]>1) slot.dataset.count = counts[unique[i]];
+      slot.title = unique[i];
+      slot.onclick = () => useInventoryItem(unique[i]);
+    }
+    inv.appendChild(slot);
+  }
+}
+
+// ===========================
+// ACTIONS
+// ===========================
+function doAction(type) {
+  if(!state) return;
+  const p = state.player;
+
+  if(type==='move') {
+    // Move to adjacent random unexplored cell, or random explored
+    const { px, py, map } = { px:p.px, py:p.py, map:state.map };
+    const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+    const valid = dirs.map(([dx,dy])=>[px+dx,py+dy])
+      .filter(([x,y])=>x>=0&&x<MAP_W&&y>=0&&y<MAP_H);
+
+    // Prefer unexplored
+    const unexplored = valid.filter(([x,y])=>!state.visited[y][x]);
+    const target = unexplored.length ? unexplored[Math.floor(Math.random()*unexplored.length)]
+                                      : valid[Math.floor(Math.random()*valid.length)];
+    p.px = target[0]; p.py = target[1];
+    state.visited[p.py][p.px] = true;
+    state.turn++;
+    drawMap();
+    addLog(`🗺️ 前進到 (${p.px},${p.py}) — ${TILE_EMOJI[state.map[p.py][p.px]]}`, 'info');
+    triggerTileEvent(state.map[p.py][p.px]);
+
+  } else if(type==='rest') {
+    if(p.hp>=p.maxHp && p.ep>=p.maxEp) { showToast('❤️ Already Full!'); return; }
+    const hpGain = Math.ceil(p.maxHp*0.25);
+    const epGain = Math.ceil(p.maxEp*0.25);
+    p.hp = Math.min(p.maxHp, p.hp+hpGain);
+    p.ep = Math.min(p.maxEp, p.ep+epGain);
+    state.turn++;
+    addLog(`💤 休息了一下... HP+${hpGain} EP+${epGain}`, 'heal');
+    // Small chance of encounter while resting
+    if(Math.random()<0.25) setTimeout(()=>startCombat(false), 600);
+
+  } else if(type==='search') {
+    state.turn++;
+    const r = Math.random();
+    if(r<0.35) {
+      const loot = ['🧪','💊','🌿','💰','🔮','🎯'][Math.floor(Math.random()*6)];
+      if(loot==='💰') { const g=5+Math.floor(Math.random()*20); p.gold+=g; addLog(`🔍 發現 ${g} 金幣！`,'loot'); showToast(`💰+${g}G`); }
+      else { addItem(loot); addLog(`🔍 發現物品：${loot}`,'loot'); }
+    } else if(r<0.55) {
+      startCombat(false);
+      return;
+    } else {
+      addLog('🔍 搜索了一番，什麼都沒有...','info');
+    }
+
+  } else if(type==='shop') {
+    openShop();
+    return;
+
+  } else if(type==='skill') {
+    if(p.ep < p.class.specialCost) { showToast('⚡ EP 不足！'); return; }
+    p.ep -= p.class.specialCost;
+    // Use skill out of combat = minor buff
+    state.turn++;
+    if(state.combat) return; // handled in combat
+    const msg = p.class.skill({player:p, combat:{enemyHp:0}});
+    addLog(`✨ ${msg}`, 'loot');
+
+  } else if(type==='craft') {
+    // Combine 2 potions -> max potion
+    const inv = state.player.inventory;
+    const potions = inv.filter(i=>i==='🧪');
+    if(potions.length>=2) {
+      state.player.inventory.splice(inv.indexOf('🧪'),1);
+      state.player.inventory.splice(inv.indexOf('🧪'),1);
+      addItem('💊');
+      addLog('⚒️ 合成了超級藥水 💊！','loot');
+      showToast('⚒️ Craft: 💊');
+    } else {
+      addLog('⚒️ 材料不足（需要 2x 🧪）','info');
+    }
+  }
+
+  updateHUD();
+  updateInventoryUI();
+  checkDeath();
+}
+
+function triggerTileEvent(tile) {
+  const p = state.player;
+  if(tile===TILE.FOREST) {
+    if(Math.random()<0.55) startCombat(false);
+    else { addLog('🌲 森林中靜悄悄的...','info'); }
+  } else if(tile===TILE.MOUNTAIN) {
+    if(Math.random()<0.45) startCombat(true); // tougher
+    else { const g=3+Math.floor(Math.random()*10); p.gold+=g; addLog(`🏔️ 山中發現礦石，售出得 ${g} 金！`,'loot'); }
+  } else if(tile===TILE.TOWN) {
+    addLog('🏘️ 你到達了小鎮！可以購物或休息。','system');
+    p.hp = Math.min(p.maxHp, p.hp + Math.ceil(p.maxHp*0.2));
+    p.ep = Math.min(p.maxEp, p.ep + Math.ceil(p.maxEp*0.2));
+    showToast('🏘️ Town! HP+EP restored');
+  } else if(tile===TILE.MYSTERY) {
+    triggerRandomEvent();
+    return;
+  } else if(tile===TILE.BOSS) {
+    addLog('🐉 ALORA CORE 等待著你！！','combat');
+    setTimeout(()=>startBoss(), 500);
+    return;
+  }
+  updateHUD();
+}
+
+// ===========================
+// COMBAT
+// ===========================
+function startCombat(tough) {
+  const pool = tough ? ENEMIES.slice(3) : ENEMIES.slice(0,5);
+  currentEnemy = JSON.parse(JSON.stringify(pool[Math.floor(Math.random()*pool.length)]));
+  // Scale enemy to player level
+  const scale = 1 + (state.player.level-1)*0.2;
+  currentEnemy.hp = Math.round(currentEnemy.hp * scale);
+  currentEnemy.maxHp = currentEnemy.hp;
+  currentEnemy.atk = Math.round(currentEnemy.atk * scale);
+
+  state.combat = { enemyHp: currentEnemy.hp, enemyMaxHp: currentEnemy.hp, burn:0, debuff:false };
+  showScreen('combat-screen');
+  document.getElementById('enemy-emoji').textContent = currentEnemy.emoji;
+  document.getElementById('enemy-name').textContent = currentEnemy.name;
+  document.getElementById('enemy-name-bar').textContent = `${currentEnemy.emoji} HP`;
+  updateCombatHUD();
+  document.getElementById('combat-log').textContent = `⚔️ ${currentEnemy.name} 出現了！`;
+  document.getElementById('combat-special').textContent = state.player.class.special;
+}
+
+function startBoss() {
+  currentEnemy = JSON.parse(JSON.stringify(BOSS));
+  currentEnemy.maxHp = currentEnemy.hp;
+  state.combat = { enemyHp: currentEnemy.hp, enemyMaxHp: currentEnemy.hp, burn:0, debuff:false };
+  showScreen('combat-screen');
+  document.getElementById('enemy-emoji').textContent = currentEnemy.emoji;
+  document.getElementById('enemy-name').textContent = '⚡ '+currentEnemy.name+' ⚡';
+  document.getElementById('enemy-name-bar').textContent = '🤖 ALORA HP';
+  updateCombatHUD();
+  document.getElementById('combat-log').textContent = `⚡ ALORA CORE 啟動！決戰開始！`;
+}
+
+function updateCombatHUD() {
+  const p = state.player;
+  const pct = Math.max(0, state.combat.enemyHp/state.combat.enemyMaxHp*100);
+  document.getElementById('enemy-hp-bar').style.width = pct+'%';
+  document.getElementById('enemy-hp-text').textContent = `${Math.max(0,state.combat.enemyHp)}/${state.combat.enemyMaxHp}`;
+  const php = Math.max(0,p.hp/p.maxHp*100);
+  const phb = document.getElementById('combat-php-bar');
+  phb.style.width = php+'%';
+  phb.className = 'bar-fill hp' + (php<30?' low':php<60?' mid':'');
+  document.getElementById('combat-php-text').textContent = `${Math.max(0,p.hp)}/${p.maxHp}`;
+}
+
+function combatAction(type) {
+  const p = state.player;
+  const c = state.combat;
+  let msg = '';
+
+  if(type==='attack') {
+    const dmg = Math.max(1, p.atk - Math.floor(currentEnemy.def*0.5) + Math.floor(Math.random()*4));
+    c.enemyHp -= dmg;
+    msg = `⚔️ 你攻擊造成 ${dmg} 傷害！`;
+
+  } else if(type==='special') {
+    if(p.ep < p.class.specialCost) { document.getElementById('combat-log').textContent = '⚡ EP 不足！'; return; }
+    p.ep -= p.class.specialCost;
+    msg = p.class.skill({player:p, combat:c});
+
+  } else if(type==='item') {
+    const potions = p.inventory.filter(i=>['🧪','💊','🧿'].includes(i));
+    if(potions.length===0) { document.getElementById('combat-log').textContent = '🎒 沒有可用道具！'; return; }
+    const item = potions[0];
+    p.inventory.splice(p.inventory.indexOf(item),1);
+    if(item==='🧪') { p.hp=Math.min(p.maxHp,p.hp+15); msg='🧪 使用生命藥水！HP+15'; }
+    else if(item==='💊') { p.hp=Math.min(p.maxHp,p.hp+25); msg='💊 使用超級藥水！HP+25'; }
+    else if(item==='🧿') { c.enemyHp-=20; msg='🧿 魔法石造成 20 傷害！'; }
+    else if(item==='💣') { c.enemyHp-=20; msg='💣 爆裂彈！-20敵HP'; }
+
+  } else if(type==='flee') {
+    if(Math.random() < 0.4 + p.spd*0.02) {
+      state.combat = null;
+      showScreen('game-screen');
+      addLog('💨 成功逃脫！','info');
+      state.turn++;
+      updateHUD();
+      drawMap();
+      return;
+    } else {
+      msg = '💨 逃跑失敗！';
+    }
+  }
+
+  // Burn damage
+  if(c.burn>0) { c.enemyHp-=3; c.burn--; msg+=' 🔥燃燒！-3HP'; }
+
+  document.getElementById('combat-log').textContent = msg;
+  updateCombatHUD();
+  updateInventoryUI();
+
+  if(c.enemyHp<=0) {
+    combatVictory(); return;
+  }
+
+  // Enemy attacks back after short delay
+  setTimeout(()=>{
+    const debuffMult = c.debuff ? 0.6 : 1;
+    const eDmg = Math.max(1, Math.round(currentEnemy.atk * debuffMult) - Math.floor(p.def*0.4) + Math.floor(Math.random()*3));
+    p.hp -= eDmg;
+    document.getElementById('combat-log').textContent = `${currentEnemy.emoji} ${currentEnemy.name} 反擊！你受到 ${eDmg} 傷害！`;
+    document.getElementById('enemy-emoji').classList.add('shake');
+    setTimeout(()=>document.getElementById('enemy-emoji').classList.remove('shake'),400);
+    updateCombatHUD();
+    updateHUD();
+    if(p.hp<=0) {
+      setTimeout(gameOver, 600);
+    }
+  }, 600);
+}
+
+function combatVictory() {
+  const xpGain = currentEnemy.xp;
+  const goldGain = currentEnemy.gold[0] + Math.floor(Math.random()*(currentEnemy.gold[1]-currentEnemy.gold[0]));
+  state.player.gold += goldGain;
+  addXp(state, xpGain);
+
+  // Loot
+  if(Math.random()<0.5 && currentEnemy.loot.length>0) {
+    const loot = currentEnemy.loot[Math.floor(Math.random()*currentEnemy.loot.length)];
+    if(loot!=='🏆') addItem(loot);
+  }
+
+  if(currentEnemy.name.includes('ALORA')) {
+    // WIN!
+    setTimeout(()=>winGame(), 600);
+    return;
+  }
+
+  addLog(`🏆 擊敗了 ${currentEnemy.emoji} ${currentEnemy.name}！+${goldGain}G +${xpGain}XP`,'loot');
+  state.combat = null;
+  state.turn++;
+  showScreen('game-screen');
+  updateHUD();
+  updateInventoryUI();
+  drawMap();
+}
+
+// ===========================
+// EVENTS
+// ===========================
+function triggerRandomEvent() {
+  currentEvent = EVENTS[Math.floor(Math.random()*EVENTS.length)];
+  document.getElementById('event-icon').textContent = currentEvent.icon;
+  document.getElementById('event-title').textContent = currentEvent.title;
+  document.getElementById('event-desc').textContent = currentEvent.desc;
+  const choicesDiv = document.getElementById('event-choices');
+  choicesDiv.innerHTML = '';
+  currentEvent.choices.forEach(ch => {
+    const btn = document.createElement('button');
+    btn.className = 'btn';
+    btn.textContent = ch.text;
+    btn.onclick = () => {
+      ch.action(state);
+      state.turn++;
+      showScreen('game-screen');
+      updateHUD();
+      updateInventoryUI();
+      drawMap();
+      checkDeath();
+    };
+    choicesDiv.appendChild(btn);
+  });
+  showScreen('event-screen');
+}
+
+// ===========================
+// SHOP
+// ===========================
+function openShop() {
+  document.getElementById('shop-gold').textContent = state.player.gold;
+  const grid = document.getElementById('shop-grid');
+  grid.innerHTML = '';
+  SHOP_ITEMS.forEach(item => {
+    const div = document.createElement('div');
+    div.className = 'shop-item';
+    div.innerHTML = `<span class="item-icon">${item.emoji}</span>
+      <div class="item-name">${item.name}</div>
+      <div class="item-cost">💰 ${item.cost}G</div>
+      <div class="item-desc">${item.desc}</div>`;
+    div.onclick = () => {
+      if(state.player.gold < item.cost) { showToast('💰 金幣不足！'); return; }
+      state.player.gold -= item.cost;
+      const result = item.action(state.player);
+      if(result==='ITEM_BOMB') addItem('💣');
+      addLog(`🏪 購買了 ${item.emoji} ${item.name}！${result}`, 'loot');
+      showToast(`🛒 ${item.emoji} ${item.name} 購買成功！`);
+      document.getElementById('shop-gold').textContent = state.player.gold;
+      updateHUD();
+      updateInventoryUI();
+    };
+    grid.appendChild(div);
+  });
+  showScreen('shop-screen');
+}
+
+function leaveShop() {
+  state.turn++;
+  showScreen('game-screen');
+  updateHUD();
+  drawMap();
+}
+
+// ===========================
+// UTILS
+// ===========================
+function addItem(emoji) {
+  if(state.player.inventory.length >= 20) {
+    addLog('🎒 背包已滿！', 'info'); return;
+  }
+  state.player.inventory.push(emoji);
+  updateInventoryUI();
+}
+
+function useInventoryItem(emoji) {
+  const p = state.player;
+  const idx = p.inventory.indexOf(emoji);
+  if(idx===-1) return;
+  if(emoji==='🧪') { p.hp=Math.min(p.maxHp,p.hp+15); p.inventory.splice(idx,1); addLog('🧪 使用生命藥水！HP+15','heal'); showToast('❤️+15HP'); }
+  else if(emoji==='💊') { p.hp=Math.min(p.maxHp,p.hp+25); p.inventory.splice(idx,1); addLog('💊 超級藥水！HP+25','heal'); showToast('❤️+25HP'); }
+  else if(emoji==='🌿') { p.ep=Math.min(p.maxEp,p.ep+8); p.inventory.splice(idx,1); addLog('🌿 草藥！EP+8','heal'); showToast('⚡+8EP'); }
+  else if(emoji==='💎') { p.gold+=30; p.inventory.splice(idx,1); addLog('💎 出售寶石！+30G','loot'); showToast('💰+30G'); }
+  else { addLog(`${emoji} 無法在戰鬥外使用。`,'info'); return; }
+  updateHUD(); updateInventoryUI();
+}
+
+function addXp(s, amount) {
+  s.player.xp += amount;
+  while(s.player.xp >= s.player.xpNeeded) {
+    s.player.xp -= s.player.xpNeeded;
+    s.player.level++;
+    s.player.xpNeeded = Math.round(s.player.xpNeeded * 1.5);
+    s.player.maxHp += 5; s.player.hp += 5;
+    s.player.atk += 2; s.player.def += 1;
+    addLog(`⭐ LEVEL UP！你升到 LV ${s.player.level}！ATK+2 DEF+1 MaxHP+5`, 'loot');
+    showToast(`⭐ LEVEL UP! LV${s.player.level}`);
+  }
+  updateHUD();
+}
+
+function addLog(msg, type='info') {
+  const log = document.getElementById('log');
+  const entry = document.createElement('div');
+  entry.className = 'log-entry ' + type;
+  entry.textContent = msg;
+  log.appendChild(entry);
+  log.scrollTop = log.scrollHeight;
+  // Keep log trimmed
+  while(log.children.length > 60) log.removeChild(log.firstChild);
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.style.display = 'block';
+  clearTimeout(showToast._timer);
+  showToast._timer = setTimeout(()=>t.style.display='none', 2000);
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function checkDeath() {
+  if(state.player.hp<=0) gameOver();
+}
+
+function gameOver() {
+  showScreen('gameover-screen');
+  document.getElementById('final-stats').innerHTML = `
+    職業：${state.player.name}<br>
+    到達等級：LV ${state.player.level}<br>
+    存活回合：${state.turn}<br>
+    擊敗敵人：${Math.floor(state.turn * 0.3)}<br>
+    最終金幣：${state.player.gold}
+  `;
+}
+
+function winGame() {
+  showScreen('win-screen');
+  document.getElementById('win-stats').innerHTML = `
+    職業：${state.player.name}<br>
+    最終等級：LV ${state.player.level}<br>
+    完成回合：${state.turn}<br>
+    最終金幣：${state.player.gold}<br>
+    ATK: ${state.player.atk} / DEF: ${state.player.def}
+  `;
+}
+
+function confirmQuit() {
+  if(confirm('確定要退出遊戲嗎？進度將會消失。')) resetGame();
+}
+
+function resetGame() {
+  state = null;
+  selectedClass = null;
+  currentEnemy = null;
+  document.getElementById('log').innerHTML = '';
+  document.querySelectorAll('.class-card').forEach(x=>x.classList.remove('selected'));
+  showScreen('title-screen');
+}
+
+// ===========================
+// BOOT
+// ===========================
+initClasses();
+</script>
+</body>
+</html>
