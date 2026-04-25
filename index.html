@@ -692,15 +692,16 @@ const ENEMIES = [
 
 const BOSS = { name:'ALORA CORE', emoji:'🤖', hp:80, atk:15, def:8, xp:500, gold:[100,200], loot:['🏆'] };
 
+// type: 'consumable' → 加入物品欄; 'equipment' → 立即生效
 const SHOP_ITEMS = [
-  { id:'potion', name:'生命藥水', emoji:'🧪', cost:15, desc:'+15 HP', action: p => { p.hp = Math.min(p.maxHp, p.hp+15); return '恢復 15 HP'; } },
-  { id:'ether', name:'魔力藥水', emoji:'🔵', cost:12, desc:'+8 EP', action: p => { p.ep = Math.min(p.maxEp, p.ep+8); return '恢復 8 EP'; } },
-  { id:'sword', name:'精鋼劍', emoji:'⚔️', cost:30, desc:'+3 ATK', action: p => { p.atk+=3; return 'ATK +3'; } },
-  { id:'shield', name:'鐵盾', emoji:'🛡️', cost:25, desc:'+3 DEF', action: p => { p.def+=3; return 'DEF +3'; } },
-  { id:'ring', name:'迅捷指環', emoji:'💍', cost:20, desc:'+2 SPD', action: p => { p.spd+=2; return 'SPD +2'; } },
-  { id:'max-potion', name:'滿血藥水', emoji:'❤️', cost:40, desc:'完全恢復HP', action: p => { p.hp=p.maxHp; return 'HP 完全恢復！'; } },
-  { id:'bomb', name:'爆裂彈', emoji:'💣', cost:20, desc:'戰鬥用，-20敵HP', action: p => { return 'ITEM_BOMB'; } },
-  { id:'elixir', name:'極上靈藥', emoji:'✨', cost:60, desc:'HP+10 ATK+2 DEF+2', action: p => { p.hp=Math.min(p.maxHp,p.hp+10); p.atk+=2; p.def+=2; return 'HP+10 ATK+2 DEF+2'; } },
+  { id:'potion',     name:'生命藥水', emoji:'🧪', cost:15, desc:'加入物品欄，使用+15HP', type:'consumable' },
+  { id:'ether',      name:'魔力藥水', emoji:'🔵', cost:12, desc:'加入物品欄，使用+8EP',  type:'consumable' },
+  { id:'max-potion', name:'滿血藥水', emoji:'💊', cost:35, desc:'加入物品欄，使用+25HP', type:'consumable' },
+  { id:'bomb',       name:'爆裂彈',  emoji:'💣', cost:20, desc:'加入物品欄，戰鬥用-20敵HP', type:'consumable' },
+  { id:'sword',      name:'精鋼劍',  emoji:'🗡️', cost:30, desc:'立即裝備 ATK+3',  type:'equipment', apply: p => { p.atk+=3; return 'ATK +3 ✅'; } },
+  { id:'shield',     name:'鐵盾',    emoji:'🛡️', cost:25, desc:'立即裝備 DEF+3',  type:'equipment', apply: p => { p.def+=3; return 'DEF +3 ✅'; } },
+  { id:'ring',       name:'迅捷指環',emoji:'💍', cost:20, desc:'立即裝備 SPD+2',  type:'equipment', apply: p => { p.spd+=2; return 'SPD +2 ✅'; } },
+  { id:'elixir',     name:'極上靈藥',emoji:'✨', cost:60, desc:'立即生效 HP+10 ATK+2 DEF+2', type:'equipment', apply: p => { p.hp=Math.min(p.maxHp,p.hp+10); p.atk+=2; p.def+=2; return 'HP+10 ATK+2 DEF+2 ✅'; } },
 ];
 
 const EVENTS = [
@@ -1236,11 +1237,17 @@ function openShop() {
       <div class="item-desc">${item.desc}</div>`;
     div.onclick = () => {
       if(state.player.gold < item.cost) { showToast('💰 金幣不足！'); return; }
+      if(state.player.inventory.length >= 20 && item.type==='consumable') { showToast('🎒 背包已滿！'); return; }
       state.player.gold -= item.cost;
-      const result = item.action(state.player);
-      if(result==='ITEM_BOMB') addItem('💣');
+      let result = '';
+      if(item.type === 'consumable') {
+        addItem(item.emoji);
+        result = '已加入物品欄 🎒';
+      } else {
+        result = item.apply(state.player);
+      }
       addLog(`🏪 購買了 ${item.emoji} ${item.name}！${result}`, 'loot');
-      showToast(`🛒 ${item.emoji} ${item.name} 購買成功！`);
+      showToast(`🛒 ${item.emoji} 購買成功！${result}`);
       document.getElementById('shop-gold').textContent = state.player.gold;
       updateHUD();
       updateInventoryUI();
@@ -1274,8 +1281,10 @@ function useInventoryItem(emoji) {
   if(idx===-1) return;
   if(emoji==='🧪') { p.hp=Math.min(p.maxHp,p.hp+15); p.inventory.splice(idx,1); addLog('🧪 使用生命藥水！HP+15','heal'); showToast('❤️+15HP'); }
   else if(emoji==='💊') { p.hp=Math.min(p.maxHp,p.hp+25); p.inventory.splice(idx,1); addLog('💊 超級藥水！HP+25','heal'); showToast('❤️+25HP'); }
+  else if(emoji==='🔵') { p.ep=Math.min(p.maxEp,p.ep+8); p.inventory.splice(idx,1); addLog('🔵 魔力藥水！EP+8','heal'); showToast('⚡+8EP'); }
   else if(emoji==='🌿') { p.ep=Math.min(p.maxEp,p.ep+8); p.inventory.splice(idx,1); addLog('🌿 草藥！EP+8','heal'); showToast('⚡+8EP'); }
   else if(emoji==='💎') { p.gold+=30; p.inventory.splice(idx,1); addLog('💎 出售寶石！+30G','loot'); showToast('💰+30G'); }
+  else if(emoji==='💣') { addLog('💣 爆裂彈只能在戰鬥中使用！','info'); return; }
   else { addLog(`${emoji} 無法在戰鬥外使用。`,'info'); return; }
   updateHUD(); updateInventoryUI();
 }
